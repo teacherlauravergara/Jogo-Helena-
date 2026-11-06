@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo da Memória - Helena ⭐</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lilac: {
+              50: '#f8f5fe',
+              100: '#f0ebfd',
+              200: '#e3d7fc',
+              300: '#cfb9f9',
+              400: '#b490f4',
+              500: '#9b67ee',
+              600: '#8643e2',
+              700: '#7330cb',
+            },
+            pastelBlue: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap');
+    body {
+      font-family: 'Quicksand', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-preserve-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+    .flipped {
+      transform: rotateY(180deg);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .pulse-subtle {
+      animation: pulse-subtle 1.8s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-lilac-100 via-pastelBlue-50 to-lilac-200 min-h-screen text-slate-800 flex flex-col items-center justify-between p-3 sm:p-6 overflow-x-hidden relative">
+
+  <!-- Floating Sparkles & Background Decor -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden opacity-40 z-0">
+    <div class="absolute -top-10 -left-10 w-72 h-72 bg-lilac-300 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-10 right-0 w-80 h-80 bg-pastelBlue-200 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="w-full max-w-4xl text-center z-10 my-2">
+    <div class="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-full shadow-sm border border-lilac-200 mb-2">
+      <span class="text-xs sm:text-sm font-bold text-lilac-700">✨ Feito com carinho para a Helena ✨</span>
+    </div>
+    <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-lilac-600 to-pastelBlue-500 tracking-tight drop-shadow-sm">
+      Jogo da Memória Divertido
+    </h1>
+  </header>
+
+  <!-- Category Selection Tabs -->
+  <nav class="w-full max-w-4xl z-10 mb-4">
+    <div class="flex flex-wrap items-center justify-center gap-2 bg-white/70 backdrop-blur-md p-2 rounded-2xl border border-white/80 shadow-md">
+      <button onclick="switchCategory('environment')" id="tab-environment" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 bg-lilac-500 text-white shadow-md shadow-lilac-300">
+        <span>🌱</span> Meio Ambiente
+      </button>
+      <button onclick="switchCategory('nature')" id="tab-nature" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white">
+        <span>🏞️</span> Natureza
+      </button>
+      <button onclick="switchCategory('actions')" id="tab-actions" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white">
+        <span>💡</span> Ações Salva-Planeta
+      </button>
+      <button onclick="switchCategory('comparisons')" id="tab-comparisons" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white">
+        <span>⚖️</span> Comparativos
+      </button>
+      <button onclick="switchCategory('descriptive')" id="tab-descriptive" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white">
+        <span>🐾</span> Características
+      </button>
+      <button onclick="switchCategory('mix')" id="tab-mix" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white">
+        <span>🌟</span> Super Mix!
+      </button>
+    </div>
+  </nav>
+
+  <!-- Dashboard: Stats + Controls -->
+  <div class="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white shadow-lg mb-4 z-10 flex flex-wrap items-center justify-between gap-3">
+    <!-- Stats Group -->
+    <div class="flex items-center gap-3 sm:gap-6 flex-wrap">
+      <div class="flex items-center gap-2 bg-lilac-50 px-3 py-1.5 rounded-xl border border-lilac-200">
+        <span class="text-lg">🎯</span>
+        <div>
+          <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Pares</div>
+          <div class="text-base sm:text-lg font-black text-lilac-600" id="matched-count">0 / 8</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-pastelBlue-50 px-3 py-1.5 rounded-xl border border-pastelBlue-200">
+        <span class="text-lg">👣</span>
+        <div>
+          <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Tentativas</div>
+          <div class="text-base sm:text-lg font-black text-pastelBlue-600" id="moves-count">0</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+        <span class="text-lg">⏱️</span>
+        <div>
+          <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Tempo</div>
+          <div class="text-base sm:text-lg font-black text-amber-600" id="timer-display">00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Group -->
+    <div class="flex items-center gap-2">
+      <!-- Pair Count Picker -->
+      <div class="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+        <span class="hidden sm:inline pl-1">Qtd:</span>
+        <button onclick="setPairCount(6)" id="btn-count-6" class="count-btn px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white">6</button>
+        <button onclick="setPairCount(8)" id="btn-count-8" class="count-btn px-2.5 py-1 rounded-lg transition bg-white shadow-sm text-lilac-600 font-extrabold">8</button>
+        <button onclick="setPairCount(12)" id="btn-count-12" class="count-btn px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white">12</button>
+        <button onclick="setPairCount(16)" id="btn-count-16" class="count-btn px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white">16</button>
+      </div>
+
+      <!-- Sound Toggle -->
+      <button onclick="toggleSound()" id="sound-btn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Ligar/Desligar Sons">
+        🔊
+      </button>
+
+      <!-- Restart Button -->
+      <button onclick="restartGame()" class="flex items-center gap-1.5 bg-gradient-to-r from-lilac-500 to-pastelBlue-500 hover:opacity-95 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition transform active:scale-95">
+        <span>🔄</span>
+        <span>Recomeçar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards Grid Container -->
+  <main class="w-full max-w-4xl z-10 flex-grow flex items-center justify-center p-1">
+    <div id="game-grid" class="w-full"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-4xl text-center py-3 text-xs text-slate-500 z-10">
+    <p>Criado com carinho • Pratique seu inglês brincando! 🌸</p>
+  </footer>
+
+  <!-- Victory Modal -->
+  <div id="win-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-lilac-300 text-center transform scale-90 transition-transform duration-300" id="modal-box">
+      <div class="text-6xl mb-3">🎉👑✨</div>
+      <h2 class="text-2xl sm:text-3xl font-black text-lilac-700 mb-2">Parabéns, Helena!</h2>
+      <p class="text-slate-600 text-sm sm:text-base mb-6">Você encontrou todos os pares e arrasou muito!</p>
+
+      <div class="grid grid-cols-2 gap-3 mb-6 bg-lilac-50 p-4 rounded-2xl border border-lilac-100">
+        <div>
+          <span class="text-xs text-slate-500 block font-semibold">Tempo Total</span>
+          <span class="text-xl font-black text-lilac-700" id="final-time">00:00</span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 block font-semibold">Tentativas</span>
+          <span class="text-xl font-black text-pastelBlue-600" id="final-moves">0</span>
+        </div>
+      </div>
+
+      <button onclick="closeWinModal(); restartGame();" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-lilac-500 to-pastelBlue-500 hover:from-lilac-600 hover:to-pastelBlue-600 text-white font-extrabold text-base shadow-lg shadow-lilac-300 transition transform active:scale-95 flex items-center justify-center gap-2">
+        <span>🎮</span> Jogar Novamente!
+      </button>
+    </div>
+  </div>
+
+  <!-- GAME LOGIC SCRIPT -->
+  <script>
+    // Fallback safe visual card if any image fails to load
+    const createFallbackCard = (container, label, emoji) => {
+      container.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-br from-lilac-100 to-pastelBlue-100 rounded-xl text-center">
+          <span class="text-3xl sm:text-4xl mb-1 drop-shadow-sm select-none">${emoji || '🎨'}</span>
+          <span class="text-[10px] sm:text-xs font-bold text-lilac-700 leading-tight px-1 max-w-full truncate">${label}</span>
+        </div>
+      `;
+    };
+
+    /* ================= DATA REPOSITORIES ================= */
+    const RAW_DATA = {
+      // ABA 1 - ENVIRONMENT (12 pares com imagens)
+      environment: [
+        { id: 'env-1', text: 'Trash in the river.', image: 'https://super.abril.com.br/wp-content/uploads/2018/07/5644f5920e216359e20005dcrio_poluido_site.jpeg', emoji: '🌊🗑️' },
+        { id: 'env-2', text: 'Water waste.', image: 'https://static.vecteezy.com/ti/vetor-gratis/p1/15708605-desperdicio-de-agua-da-torneira-aberta-desperdicio-de-tema-de-agua-para-economizar-agua-espalhe-a-agua-no-chao-do-balde-do-buraco-vetor.jpg', emoji: '🚰💧' },
+        { id: 'env-3', text: 'Pollution.', image: 'https://img.magnific.com/fotos-gratis/fumaca-saindo-de-fabricas-em-uma-area-industrial_181624-25892.jpg?semt=ais_hybrid&w=740&q=80', emoji: '🏭💨' },
+        { id: 'env-4', text: 'Not recycled trash.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEiltrKLLXi2D3pc24_57PHld_AkZI-dB7QhF8ZHYbRuVDLgucuOIhWrgd&s=10', emoji: '🗑️🚯' },
+        { id: 'env-5', text: 'Recycle', image: 'https://static.todamateria.com.br/upload/co/le/coletaseletiva-cke.jpg', emoji: '♻️📦' },
+        { id: 'env-6', text: 'Save water', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvfbfIw25TKD0mTaynD2e7XEw97N199TXIZDkJEl2TZ0krNvcxkv1YKtNk&s=10', emoji: '🚰✅' },
+        { id: 'env-7', text: 'Plant things.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0BFlwukTvTVls5RDiFFiVfGKsUy_nsTqHDoWfrNtUgIgm88BIPfmxebE&s=10', emoji: '🌱👩‍🌾' },
+        { id: 'env-8', text: 'Take reusable bags to the supermarket.', image: 'https://www.thebaggler.com/wp-content/uploads/2024/11/reusableBags-1024x649.png', emoji: '🛍️🥬' },
+        { id: 'env-9', text: 'Pick up litter.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ64gBsk_cnCzD599e5IDKXT871QFA_1AO052qILTC3wz0NGqg_-fj5R_A&s=10', emoji: '🧤🚮' },
+        { id: 'env-10', text: 'Walk to get to places.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeVhz_peaXqdWdOLXsIBXsd-nJi7oVybFdbESwyX2KYcOHE7fZ5vpDLOzi&s=10', emoji: '🚶‍♀️👟' },
+        { id: 'env-11', text: 'Use a reusable water bottle.', image: 'https://acdn-us.mitiendanube.com/stores/002/571/790/products/5-f207433015358932d917487081096377-1024-1024.webp', emoji: '🍶💧' },
+        { id: 'env-12', text: 'Upcycle? (making new things out of old things.)', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSewgU0bYLOps4xIFU1IoZ7bjoN9X4XZXL1A3noNSB9LjJbS3myJi6Nq7g&s=10', emoji: '💡🎨' }
+      ],
+
+      // ABA 2 - NATURE (13 pares com imagens)
+      nature: [
+        { id: 'nat-1', text: 'Stars', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS1hkk9AJUb8C2rw6wuOjtsaSC7Xroe9nz9qLKNHR5XrfQ-9V0GksfKYwg&s=10', emoji: '⭐✨' },
+        { id: 'nat-2', text: 'Mountain', image: 'https://s1.static.brasilescola.uol.com.br/be/2025/02/montanhas-rochosas.jpg', emoji: '🏔️' },
+        { id: 'nat-3', text: 'Plant', image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/Diversity_of_plants_%28Streptophyta%29_version_2.png/250px-Diversity_of_plants_%28Streptophyta%29_version_2.png', emoji: '🪴' },
+        { id: 'nat-4', text: 'Nature', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTre47zgG4rxq3CO3wU9HSPZJdhpyvkIlRe20NCPv55GQ2S6V9zQQVb4_Ys&s=10', emoji: '🌲🦌' },
+        { id: 'nat-5', text: 'Waterfall', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSnInKybDrHOgOipdek46YUZs790Tx1nUhWb64UFeI7Q&s=10', emoji: '🌊' },
+        { id: 'nat-6', text: 'Grass', image: 'https://agromania.cdn.magazord.com.br/img/2021/09/blog/10161/grama-esmeralda.jpg', emoji: '🌿' },
+        { id: 'nat-7', text: 'Lake', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1tvSgCHwmgV-pL5bFkM2njhdjCorEOGmUo6IjCFRVUw&s=10', emoji: '🛶' },
+        { id: 'nat-8', text: 'Leaf', image: 'https://static.todamateria.com.br/upload/57/d9/57d9186365563-folhas.jpg', emoji: '🍃' },
+        { id: 'nat-9', text: 'Ground', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiQ7GIfCJitjUhJQEGJUFTZN0v5HilUvMXFSDXqHL8Ng&s=10', emoji: '🪵' },
+        { id: 'nat-10', text: 'Moon', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5gxduPsv8Z-I-YW_24ozHiolqNuYuqrA0oKwI9-zZ4g&s=10', emoji: '🌙' },
+        { id: 'nat-11', text: 'Rock', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUGm1b97EbymJ6hC_0XESA1F-2CDqk4iMwzk1Pa0Ue3A&s=10', emoji: '🪨' },
+        { id: 'nat-12', text: 'Road', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZvmF5wlNieQac9r5WZgI1J5O7FC45sE28V9to_dG4P344PrLhMHTFKuF7&s=10', emoji: '🛣️' },
+        { id: 'nat-13', text: 'River', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfda3zMHDTmQ1I7qQ0FCeowVHFlsq1W5Y-VcTpYOeV2kMnE-ymPygm1Rc&s=10', emoji: '🏞️' }
+      ],
+
+      // ABA 3 - ACTIONS (4 pares texto-texto)
+      actions: [
+        { id: 'act-1', sideA: 'We need to keep the air clean', sideB: 'because people and animal need to breathe' },
+        { id: 'act-2', sideA: 'We need to produce less rubbish', sideB: "because the animals don't know the difference between rubbish and food" },
+        { id: 'act-3', sideA: 'We need to keep the sea clean', sideB: 'because we enjoy beautiful landscapes' },
+        { id: 'act-4', sideA: 'We need to save water', sideB: 'because there is a limited amount of it in the world' }
+      ],
+
+      // ABA 4 - ANIMAIS COMPARATIVOS (SUAS 14 IMAGENS DO POSTIMAGES)
+      comparisons: [
+        { id: 'cmp-1', text: 'The turtle is shorter than the camel.', image: 'https://i.postimg.cc/zyLHRj5p/Captura-de-tela-2026-11-05-195718.png', label: 'The turtle is shorter than the camel' },
+        { id: 'cmp-2', text: 'The Camel is shorter than the turtle.', image: 'https://i.postimg.cc/WdDqJnjw/Captura-de-tela-2026-11-05-195817.png', label: 'The Camel is shorter than the turtle' },
+        { id: 'cmp-3', text: 'The blue whale is bigger than the dolphin.', image: 'https://i.postimg.cc/cvKt8mZh/Captura-de-tela-2026-11-05-195923.png', label: 'The blue whale is bigger than the dolphin' },
+        { id: 'cmp-4', text: 'The dolphin is bigger than the blue whale.', image: 'https://i.postimg.cc/WdDqJnj7/Captura-de-tela-2026-11-05-195951.png', label: 'The dolphin is bigger than the blue whale' },
+        { id: 'cmp-5', text: 'The lion is stronger than the cat.', image: 'https://i.postimg.cc/MncfjDxb/Captura-de-tela-2026-11-05-200147.png', label: 'The lion is stronger than the cat' },
+        { id: 'cmp-6', text: 'The cat is stronger than the lion.', image: 'https://i.postimg.cc/FYfkJZmc/Captura-de-tela-2026-11-05-200318.png', label: 'The cat is stronger than the lion' },
+        { id: 'cmp-7', text: 'The panda is cuter than the eagle.', image: 'https://i.postimg.cc/JsyHBqmj/Captura-de-tela-2026-11-05-200420.png', label: 'The panda is cuter than the eagle' },
+        { id: 'cmp-8', text: 'The eagle is cuter than the panda.', image: 'https://i.postimg.cc/FYfkJZm3/Captura-de-tela-2026-11-05-200618.png', label: 'The eagle is cuter than the panda' },
+        { id: 'cmp-9', text: 'The parrot is funnier than the swan.', image: 'https://i.postimg.cc/QHYWtPL0/Captura-de-tela-2026-11-05-200741.png', label: 'The parrot is funnier than the swan' },
+        { id: 'cmp-10', text: 'The swan is funnier than the parrot.', image: 'https://i.postimg.cc/Mv3jT4kb/Captura-de-tela-2026-11-05-200903.png', label: 'The swan is funnier than the parrot' },
+        { id: 'cmp-11', text: 'The horse is faster than the camel.', image: 'https://i.postimg.cc/hfZ7jwF1/Captura-de-tela-2026-11-05-200944.png', label: 'The horse is faster than the camel' },
+        { id: 'cmp-12', text: 'The camel is faster than the horse.', image: 'https://i.postimg.cc/bsV2JMXx/Captura-de-tela-2026-11-05-201036.png', label: 'The camel is faster than the horse' },
+        { id: 'cmp-13', text: 'The dog is smaller than the horse.', image: 'https://i.postimg.cc/dLNT1XMG/Captura-de-tela-2026-11-05-201205.png', label: 'The dog is smaller than the horse' },
+        { id: 'cmp-14', text: 'The horse is smaller than the dog.', image: 'https://i.postimg.cc/DSW4bgFC/Captura-de-tela-2026-11-05-201229.png', label: 'The horse is smaller than the dog' }
+      ],
+
+      // ABA 5 - ANIMAIS E CARACTERÍSTICAS GERAL (16 pares)
+      descriptive: [
+        { id: 'desc-1', text: 'The lion is big.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbrX2DwmjtNt5r1MpYG5ozUi1z6UaYy-qjKNdvPtC-Ww&s=10', emoji: '🦁👑' },
+        { id: 'desc-2', text: 'The lion is small.', image: 'https://t4.ftcdn.net/jpg/19/59/32/51/360_F_1959325199_jDqhUUt3yw8euYXfwWbwlJXqthm4AFwL.jpg', emoji: '🦁🍼' },
+        { id: 'desc-3', text: 'The dog is strong.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxPmB_tK_-yt2ZRTq2QmVziCrttlvq2xGkrPC2oWl3U4OvLyWTuqpbb8E_&s=10', emoji: '🐕💪' },
+        { id: 'desc-4', text: 'The dog is weak.', image: 'https://t4.ftcdn.net/jpg/04/42/16/45/360_F_442164513_8rOO3HDx5mQasqAywEr69H8hDl7NzUKY.jpg', emoji: '🐶💤' },
+        { id: 'desc-5', text: 'The eagle is strong.', image: 'https://www.shutterstock.com/image-vector/illustration-shows-strong-eagle-man-600w-1244116114.jpg', emoji: '🦅💪' },
+        { id: 'desc-6', text: 'The eagle is weak.', image: 'https://images.unsplash.com/photo-1611689342806-0863700ce8e4?w=400&q=80', emoji: '🦅🩹' },
+        { id: 'desc-7', text: 'The panda is cute.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpQIlIbuS7Z3vyodXWTfRWQKiD4b1kLGSiKgfKlvLoMuq0YuiILY4EhZg&s=10', emoji: '🐼💕' },
+        { id: 'desc-8', text: 'The panda is ugly.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVMBivrbyR7cLOAtpxdqfY7AeQwHXvz3eHGtYfkEnkYg&s=10', emoji: '🐼🤪' },
+        { id: 'desc-9', text: 'The kangaroo is fast.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUNJUE6nYgQEQzd_bnhB37RNDZkeXHjKVgpbZwrmlC9gHGDfJe8Dihr5Y&s=10', emoji: '🦘⚡' },
+        { id: 'desc-10', text: 'The kangaroo is slow.', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4OEUrPwJig_T9Dm2E9s9qryryaXds3z3XlUkwBHNLTEz3CRy0ptgYiwU&s=10', emoji: '🦘🛌' },
+        { id: 'desc-11', text: 'The camel is interesting.', image: 'https://images.unsplash.com/photo-1544979590-37e9b47eb705?w=400&q=80', emoji: '🐪🕶️' },
+        { id: 'desc-12', text: 'The camel is boring.', image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80', emoji: '🐪😴' },
+        { id: 'desc-13', text: 'The turtle is slow.', image: 'https://thumbs.dreamstime.com/b/basic-rgb-272144966.jpg', emoji: '🐢⏳' },
+        { id: 'desc-14', text: 'The turtle is fast.', image: 'https://media.istockphoto.com/id/119079361/vector/turtle-with-rocket.jpg?s=612x612&w=0&k=20&c=8rgvaZjQCXxO4jYQmzoB0BuPPJZaZ28cwmnWWu9gS70=', emoji: '🐢🚀' },
+        { id: 'desc-15', text: 'The parrots are funny.', image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=400&q=80', emoji: '🦜🎉' },
+        { id: 'desc-16', text: 'The parrots are boring.', image: 'https://images.unsplash.com/photo-1522858547550-3405742f16f0?w=400&q=80', emoji: '🦜💤' }
+      ]
+    };
+
+    /* ================= GAME STATE ================= */
+    let currentCategory = 'environment';
+    let targetPairCount = 8;
+    let cards = [];
+    let flippedCards = [];
+    let matchedPairs = 0;
+    let moves = 0;
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let isLocked = false;
+    let soundEnabled = true;
+
+    /* ================= AUDIO SYNTHESIZER ================= */
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        // Audio error silent fallback
+      }
+    }
+
+    function soundFlip() {
+      playTone(480, 'sine', 0.08, 0.08);
+    }
+
+    function soundMatch() {
+      playTone(523.25, 'triangle', 0.12, 0.1);
+      setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.1), 100);
+      setTimeout(() => playTone(783.99, 'triangle', 0.22, 0.12), 200);
+    }
+
+    function soundFail() {
+      playTone(280, 'sine', 0.15, 0.08);
+      setTimeout(() => playTone(220, 'sine', 0.25, 0.07), 120);
+    }
+
+    function soundVictory() {
+      const melody = [
+        { f: 523.25, d: 0.12 },
+        { f: 659.25, d: 0.12 },
+        { f: 783.99, d: 0.15 },
+        { f: 1046.50, d: 0.35 }
+      ];
+      melody.forEach((note, idx) => {
+        setTimeout(() => playTone(note.f, 'triangle', note.d, 0.15), idx * 140);
+      });
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-btn');
+      if (btn) {
+        btn.textContent = soundEnabled ? '🔊' : '🔇';
+        btn.title = soundEnabled ? 'Desligar Sons' : 'Ligar Sons';
+      }
+    }
+
+    /* ================= UTILITIES ================= */
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function formatTime(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    /* ================= GENERATING PAIRS ================= */
+    function buildCardPairs(category, count) {
+      let rawPairs = [];
+
+      if (category === 'mix') {
+        const envP = RAW_DATA.environment.map(i => ({ type: 'image-text', id: 'm-env-' + i.id, text: i.text, image: i.image, emoji: i.emoji }));
+        const natP = RAW_DATA.nature.map(i => ({ type: 'image-text', id: 'm-nat-' + i.id, text: i.text, image: i.image, emoji: i.emoji }));
+        const actP = RAW_DATA.actions.map(i => ({ type: 'text-text', id: 'm-act-' + i.id, sideA: i.sideA, sideB: i.sideB }));
+        const cmpP = RAW_DATA.comparisons.map(i => ({ type: 'image-text', id: 'm-cmp-' + i.id, text: i.text, image: i.image, label: i.label }));
+        const dscP = RAW_DATA.descriptive.map(i => ({ type: 'image-text', id: 'm-dsc-' + i.id, text: i.text, image: i.image, emoji: i.emoji }));
+
+        const all = [...envP, ...natP, ...actP, ...cmpP, ...dscP];
+        shuffleArray(all);
+        rawPairs = all.slice(0, count);
+      } else if (category === 'actions') {
+        const source = [...RAW_DATA.actions];
+        shuffleArray(source);
+        rawPairs = source.slice(0, Math.min(count, source.length)).map(i => ({
+          type: 'text-text',
+          id: i.id,
+          sideA: i.sideA,
+          sideB: i.sideB
+        }));
+      } else if (category === 'comparisons') {
+        const source = [...RAW_DATA.comparisons];
+        shuffleArray(source);
+        rawPairs = source.slice(0, Math.min(count, source.length)).map(i => ({
+          type: 'image-text',
+          id: i.id,
+          text: i.text,
+          image: i.image,
+          label: i.label
+        }));
+      } else {
+        const source = [...RAW_DATA[category]];
+        shuffleArray(source);
+        rawPairs = source.slice(0, Math.min(count, source.length)).map(i => ({
+          type: 'image-text',
+          id: i.id,
+          text: i.text,
+          image: i.image,
+          emoji: i.emoji
+        }));
+      }
+
+      const cardList = [];
+      rawPairs.forEach((pair, idx) => {
+        const pairKey = `pair_${pair.id || idx}`;
+
+        if (pair.type === 'text-text') {
+          cardList.push({
+            uniqueId: `${pairKey}_a`,
+            pairKey: pairKey,
+            kind: 'text',
+            content: pair.sideA,
+            badge: 'Ação 🌍'
+          });
+          cardList.push({
+            uniqueId: `${pairKey}_b`,
+            pairKey: pairKey,
+            kind: 'text',
+            content: pair.sideB,
+            badge: 'Porque... 💡'
+          });
+        } else {
+          cardList.push({
+            uniqueId: `${pairKey}_text`,
+            pairKey: pairKey,
+            kind: 'text',
+            content: pair.text,
+            badge: 'Frase 📝'
+          });
+          cardList.push({
+            uniqueId: `${pairKey}_img`,
+            pairKey: pairKey,
+            kind: 'image',
+            imageUrl: pair.image,
+            label: pair.label || pair.text,
+            emoji: pair.emoji,
+            badge: 'Imagem 🖼️'
+          });
+        }
+      });
+
+      shuffleArray(cardList);
+      return { cardList, totalPairs: rawPairs.length };
+    }
+
+    /* ================= GAMEPLAY CONTROLLERS ================= */
+    function setPairCount(num) {
+      targetPairCount = num;
+      [6, 8, 12, 16].forEach(n => {
+        const btn = document.getElementById(`btn-count-${n}`);
+        if (btn) {
+          if (n === num) {
+            btn.className = 'count-btn px-2.5 py-1 rounded-lg transition bg-white shadow-sm text-lilac-600 font-extrabold';
+          } else {
+            btn.className = 'count-btn px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white';
+          }
+        }
+      });
+      restartGame();
+    }
+
+    function switchCategory(cat) {
+      currentCategory = cat;
+      const tabs = ['environment', 'nature', 'actions', 'comparisons', 'descriptive', 'mix'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          if (t === cat) {
+            btn.className = 'tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 bg-lilac-500 text-white shadow-md shadow-lilac-300';
+          } else {
+            btn.className = 'tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 text-slate-600 hover:bg-white';
+          }
+        }
+      });
+      restartGame();
+    }
+
+    function renderCardsGrid() {
+      const grid = document.getElementById('game-grid');
+      grid.innerHTML = '';
+
+      if (cards.length <= 8) {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full max-w-2xl mx-auto';
+      } else if (cards.length <= 16) {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-2.5 sm:gap-3.5 w-full max-w-4xl mx-auto';
+      } else if (cards.length <= 24) {
+        grid.className = 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3 w-full max-w-5xl mx-auto';
+      } else {
+        grid.className = 'grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 sm:gap-2.5 w-full max-w-6xl mx-auto';
+      }
+
+      cards.forEach((card, index) => {
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = 'perspective-1000 aspect-[4/5] sm:aspect-[3/4] cursor-pointer group';
+        cardWrapper.id = `card-wrap-${index}`;
+        cardWrapper.setAttribute('onclick', `handleCardClick(${index})`);
+
+        const inner = document.createElement('div');
+        inner.className = 'w-full h-full relative transition-transform duration-500 transform-style-preserve-3d rounded-2xl shadow-md hover:shadow-lg';
+        inner.id = `card-inner-${index}`;
+
+        const back = document.createElement('div');
+        back.className = 'w-full h-full absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-lilac-300 via-lilac-400 to-pastelBlue-300 border-2 border-white/80 flex flex-col items-center justify-center p-2 text-white shadow-inner';
+        back.innerHTML = `
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center text-xl sm:text-2xl shadow-sm mb-1 group-hover:scale-110 transition-transform">
+            ⭐
+          </div>
+          <span class="text-[10px] sm:text-xs font-black tracking-wider uppercase opacity-90">Helena</span>
+        `;
+
+        const front = document.createElement('div');
+        front.className = 'w-full h-full absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-white border-2 border-lilac-200 p-2 sm:p-2.5 flex flex-col items-center justify-center text-center overflow-hidden shadow-sm';
+        front.id = `card-front-${index}`;
+
+        if (card.kind === 'image') {
+          front.innerHTML = `
+            <div class="w-full h-full relative rounded-xl overflow-hidden bg-slate-50 flex flex-col items-center justify-center p-1 border border-lilac-100">
+              <img 
+                src="${card.imageUrl}" 
+                alt="${card.label || 'Ilustração'}" 
+                referrerpolicy="no-referrer"
+                class="w-full h-full object-contain rounded-lg pointer-events-none"
+                loading="eager"
+                onerror="this.onerror=null; createFallbackCard(this.parentElement, '${(card.label || '').replace(/'/g, "\\'")}', '${card.emoji || '🖼️'}');"
+              />
+              <div class="absolute bottom-1 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold text-lilac-700 shadow-sm border border-lilac-100 max-w-[90%] truncate">
+                ${card.badge}
+              </div>
+            </div>
+          `;
+        } else {
+          const contentText = String(card.content || '');
+          const isSentenceLong = contentText.length > 35;
+          front.innerHTML = `
+            <div class="w-full h-full flex flex-col items-center justify-between p-1 bg-gradient-to-b from-lilac-50/50 to-white rounded-xl">
+              <span class="text-[9px] sm:text-[10px] font-bold text-lilac-500 uppercase tracking-wider">${card.badge}</span>
+              <p class="font-extrabold text-slate-800 ${isSentenceLong ? 'text-xs sm:text-xs' : 'text-xs sm:text-sm md:text-base'} leading-snug px-1 flex-grow flex items-center justify-center">
+                ${contentText}
+              </p>
+              <span class="text-[10px] opacity-40">✨</span>
+            </div>
+          `;
+        }
+
+        inner.appendChild(back);
+        inner.appendChild(front);
+        cardWrapper.appendChild(inner);
+        grid.appendChild(cardWrapper);
+      });
+    }
+
+    function handleCardClick(index) {
+      if (isLocked) return;
+      const inner = document.getElementById(`card-inner-${index}`);
+      if (!inner || inner.classList.contains('flipped')) return;
+
+      getAudioContext();
+      soundFlip();
+
+      inner.classList.add('flipped');
+      flippedCards.push({ index, card: cards[index] });
+
+      if (flippedCards.length === 2) {
+        moves++;
+        updateStats();
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      isLocked = true;
+      const [first, second] = flippedCards;
+
+      if (first.card.pairKey === second.card.pairKey) {
+        soundMatch();
+        matchedPairs++;
+        updateStats();
+
+        setTimeout(() => {
+          const front1 = document.getElementById(`card-front-${first.index}`);
+          const front2 = document.getElementById(`card-front-${second.index}`);
+          if (front1) {
+            front1.classList.add('border-emerald-400', 'bg-emerald-50/30', 'shadow-md');
+          }
+          if (front2) {
+            front2.classList.add('border-emerald-400', 'bg-emerald-50/30', 'shadow-md');
+          }
+          flippedCards = [];
+          isLocked = false;
+
+          if (matchedPairs >= targetPairCount) {
+            triggerVictory();
+          }
+        }, 400);
+      } else {
+        soundFail();
+        setTimeout(() => {
+          const inner1 = document.getElementById(`card-inner-${first.index}`);
+          const inner2 = document.getElementById(`card-inner-${second.index}`);
+          if (inner1) inner1.classList.remove('flipped');
+          if (inner2) inner2.classList.remove('flipped');
+          flippedCards = [];
+          isLocked = false;
+        }, 1100);
+      }
+    }
+
+    function updateStats() {
+      const matchDisplay = document.getElementById('matched-count');
+      const movesDisplay = document.getElementById('moves-count');
+      if (matchDisplay) matchDisplay.textContent = `${matchedPairs} / ${targetPairCount}`;
+      if (movesDisplay) movesDisplay.textContent = moves;
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerSeconds = 0;
+      const timerDisplay = document.getElementById('timer-display');
+      if (timerDisplay) timerDisplay.textContent = '00:00';
+
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        if (timerDisplay) {
+          timerDisplay.textContent = formatTime(timerSeconds);
+        }
+      }, 1000);
+    }
+
+    function triggerVictory() {
+      clearInterval(timerInterval);
+      soundVictory();
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        setTimeout(() => {
+          confetti({
+            particleCount: 60,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 }
+          });
+          confetti({
+            particleCount: 60,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 }
+          });
+        }, 300);
+      }
+
+      const modal = document.getElementById('win-modal');
+      const box = document.getElementById('modal-box');
+      const finalTime = document.getElementById('final-time');
+      const finalMoves = document.getElementById('final-moves');
+
+      if (finalTime) finalTime.textContent = formatTime(timerSeconds);
+      if (finalMoves) finalMoves.textContent = moves;
+
+      if (modal && box) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          box.classList.remove('scale-90');
+          box.classList.add('scale-100');
+        }, 50);
+      }
+    }
+
+    function closeWinModal() {
+      const modal = document.getElementById('win-modal');
+      const box = document.getElementById('modal-box');
+      if (modal && box) {
+        box.classList.remove('scale-100');
+        box.classList.add('scale-90');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+        }, 300);
+      }
+    }
+
+    function restartGame() {
+      clearInterval(timerInterval);
+      flippedCards = [];
+      matchedPairs = 0;
+      moves = 0;
+      isLocked = false;
+      closeWinModal();
+
+      const { cardList, totalPairs } = buildCardPairs(currentCategory, targetPairCount);
+      targetPairCount = totalPairs;
+      cards = cardList;
+
+      updateStats();
+      renderCardsGrid();
+      startTimer();
+    }
+
+    /* Start on window load */
+    window.onload = function() {
+      restartGame();
+    };
+  </script>
+</body>
+</html>
